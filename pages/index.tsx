@@ -33,11 +33,13 @@ interface ApiData {
 const RANK_EMOJIS = ["🥇", "🥈", "🥉"];
 
 const USERNAMES_SHORT: Record<string, string> = {
-  tharun_raj_28: "Tharun",
+  tharun_raj_28: "Tharun_Raj",
   "N-Varnika": "Varnika",
   Vasuntra: "Vasuntra",
-  "vijay07-vj": "Vijay",
-  decimusmaximusmeridius: "Decimus",
+  "vijay07-vj": "Vijayavarman",
+  decimusmaximusmeridius: "Tamizharasan",
+  "Nethra_Balan_G": "Netra_Balan",
+  "Yaminii02": "Yamini",
 };
 
 function shortName(u: string) {
