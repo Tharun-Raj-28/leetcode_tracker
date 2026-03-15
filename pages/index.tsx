@@ -33,11 +33,13 @@ interface ApiData {
 const RANK_EMOJIS = ["🥇", "🥈", "🥉"];
 
 const USERNAMES_SHORT: Record<string, string> = {
-  tharun_raj_28: "Tharun",
+  tharun_raj_28: "Tharun_Raj",
   "N-Varnika": "Varnika",
   Vasuntra: "Vasuntra",
-  "vijay07-vj": "Vijay",
-  decimusmaximusmeridius: "Decimus",
+  "vijay07-vj": "Vijayavarman",
+  decimusmaximusmeridius: "Tamizharasan",
+  "Yaminii02": "Yamini",
+  "Nethra_Balan_G": "Nethra_Balan"
 };
 
 function shortName(u: string) {
@@ -54,11 +56,13 @@ function Bar({ value, max }: { value: number; max: number }) {
 }
 
 function formatDate(d: string) {
-  return new Date(d + "T00:00:00Z").toLocaleDateString("en-IN", {
+  const [y, m, day] = d.split("-").map(Number);
+  const date = new Date(y, m - 1, day);
+
+  return date.toLocaleDateString("en-IN", {
     weekday: "short",
     month: "short",
     day: "numeric",
-    timeZone: "UTC",
   });
 }
 

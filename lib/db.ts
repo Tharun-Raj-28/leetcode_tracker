@@ -73,7 +73,9 @@ export async function getWeeklyLeaderboard(startDate: string, endDate: string) {
 
 export async function getDailyBreakdown(startDate: string, endDate: string) {
   const res = await query(
-    `SELECT username, date, solve_count
+    `SELECT username,
+            date::text as date,
+            solve_count
      FROM daily_solves
      WHERE date >= $1 AND date <= $2
      ORDER BY date ASC, solve_count DESC;`,

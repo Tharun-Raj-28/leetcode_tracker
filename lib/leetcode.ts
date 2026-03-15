@@ -1,9 +1,10 @@
 const MEMBERS = [
+  "decimusmaximusmeridius",
   "tharun_raj_28",
   "N-Varnika",
   "Vasuntra",
   "vijay07-vj",
-  "decimusmaximusmeridius",
+  "Yaminii02",
   "Nethra_Balan_G",
 ];
 
