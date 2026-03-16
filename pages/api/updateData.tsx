@@ -11,7 +11,11 @@ export default async function handler(
     await setupDb();
 
     // today's date (UTC)
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    )
+    .toISOString()
+    .split("T")[0];
 
     // fetch solve counts from LeetCode
     const results = await syncAll(today);
