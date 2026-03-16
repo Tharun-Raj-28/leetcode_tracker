@@ -34,11 +34,12 @@ interface ApiData {
 const RANK_EMOJIS = ["🥇", "🥈", "🥉"];
 
 const USERNAMES_SHORT: Record<string, string> = {
+  decimusmaximusmeridius: "Tamizharasan",
+  Chayank__T: "Chayank",
   tharun_raj_28: "Tharun_Raj",
   "N-Varnika": "Varnika",
   Vasuntra: "Vasuntra",
   "vijay07-vj": "Vijayavarman",
-  decimusmaximusmeridius: "Tamizharasan",
   "Yaminii02": "Yamini",
   "Nethra_Balan_G": "Nethra_Balan",
 };
