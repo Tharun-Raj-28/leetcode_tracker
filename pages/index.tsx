@@ -27,6 +27,7 @@ interface ApiData {
   todayLeaderboard: UserScore[];
   weeklyLeaderboard: UserScore[];
   dailyBreakdown: DailyRow[];
+  allHistory: DailyRow[];         // ← NEW: all-time history from DB
   syncResults: SyncResult[];
 }
 
@@ -40,6 +41,10 @@ const USERNAMES_SHORT: Record<string, string> = {
   decimusmaximusmeridius: "Tamizharasan",
   "Nethra_Balan_G": "Netra_Balan",
   "Yaminii02": "Yamini",
+<<<<<<< HEAD
+=======
+  "Nethra_Balan_G": "Nethra_Balan",
+>>>>>>> 892cf62 (History changes)
 };
 
 function shortName(u: string) {
@@ -56,7 +61,13 @@ function Bar({ value, max }: { value: number; max: number }) {
 }
 
 function formatDate(d: string) {
+<<<<<<< HEAD
   return new Date(d + "T00:00:00Z").toLocaleDateString("en-IN", {
+=======
+  const [y, m, day] = d.split("-").map(Number);
+  const date = new Date(y, m - 1, day);
+  return date.toLocaleDateString("en-IN", {
+>>>>>>> 892cf62 (History changes)
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -72,7 +83,6 @@ export default function Home() {
   const [tab, setTab] = useState<"today" | "week" | "history">("today");
   const [dots, setDots] = useState("");
 
-  // Animate dots while loading
   useEffect(() => {
     if (!loading) return;
     const iv = setInterval(() => setDots((d) => (d.length >= 3 ? "" : d + ".")), 400);
@@ -95,7 +105,6 @@ export default function Home() {
     }
   }, []);
 
-  // Fetch on mount
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -103,19 +112,31 @@ export default function Home() {
   const todayMax = Math.max(1, ...(data?.todayLeaderboard.map((u) => u.solve_count ?? 0) || []));
   const weekMax = Math.max(1, ...(data?.weeklyLeaderboard.map((u) => u.total_solves ?? 0) || []));
 
-  // Build matrix for history tab
+  // ── History matrix: built from allHistory (all-time), not dailyBreakdown ──
+  const historyRows = data?.allHistory || [];
+
   const days: string[] = [];
-  if (data?.dailyBreakdown.length) {
-    const seen = new Set<string>();
-    for (const row of data.dailyBreakdown) {
-      if (!seen.has(row.date)) { seen.add(row.date); days.push(row.date); }
+  const seenDays = new Set<string>();
+  for (const row of historyRows) {
+    if (!seenDays.has(row.date)) {
+      seenDays.add(row.date);
+      days.push(row.date);
     }
   }
-  const members = data?.weeklyLeaderboard.map((u) => u.username) || [];
+
+  // Members: respect known order, then any unknown usernames after
+  const knownOrder = Object.keys(USERNAMES_SHORT);
+  const seenMembers = new Set(historyRows.map((r) => r.username));
+  const members = [
+    ...knownOrder.filter((u) => seenMembers.has(u)),
+    ...[...seenMembers].filter((u) => !knownOrder.includes(u)),
+  ];
+
   const matrixMap: Record<string, number> = {};
-  for (const row of data?.dailyBreakdown || []) {
+  for (const row of historyRows) {
     matrixMap[`${row.username}__${row.date}`] = row.solve_count;
   }
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -128,7 +149,6 @@ export default function Home() {
       </Head>
 
       <div className="root">
-        {/* Scanlines overlay */}
         <div className="scanlines" />
 
         <header className="header">
@@ -139,11 +159,7 @@ export default function Home() {
             <span className="title">Progress Tracker</span>
           </div>
           <div className="header-right">
-            {lastRefresh && (
-              <span className="last-refresh">
-                UPDATED {lastRefresh}
-              </span>
-            )}
+            {lastRefresh && <span className="last-refresh">UPDATED {lastRefresh}</span>}
             <button
               className={`refresh-btn ${loading ? "loading" : ""}`}
               onClick={refresh}
@@ -154,11 +170,7 @@ export default function Home() {
           </div>
         </header>
 
-        {error && (
-          <div className="error-bar">
-            ⚠ {error}
-          </div>
-        )}
+        {error && <div className="error-bar">⚠ {error}</div>}
 
         {loading && !data && (
           <div className="loading-screen">
@@ -180,7 +192,6 @@ export default function Home() {
               <span className="date-val">{formatDate(data.weekStart)} → {formatDate(data.weekEnd)}</span>
             </div>
 
-            {/* Tabs */}
             <div className="tabs">
               {(["today", "week", "history"] as const).map((t) => (
                 <button
@@ -201,20 +212,13 @@ export default function Home() {
                 </div>
                 {data.todayLeaderboard.map((u, i) => (
                   <div key={u.username} className={`board-row ${i === 0 ? "row-gold" : i === 1 ? "row-silver" : i === 2 ? "row-bronze" : ""}`}>
-                    <span className="rank">
-                      {i < 3 ? RANK_EMOJIS[i] : `#${i + 1}`}
-                    </span>
+                    <span className="rank">{i < 3 ? RANK_EMOJIS[i] : `#${i + 1}`}</span>
                     <span className="username">
                       <span className="username-short">{shortName(u.username)}</span>
                       <span className="username-full">{u.username}</span>
                     </span>
-                    <span className="count">
-                      {u.solve_count ?? 0}
-                      <span className="count-label"> problems</span>
-                    </span>
-                    <span className="bar-cell">
-                      <Bar value={u.solve_count ?? 0} max={todayMax} />
-                    </span>
+                    <span className="count">{u.solve_count ?? 0}<span className="count-label"> problems</span></span>
+                    <span className="bar-cell"><Bar value={u.solve_count ?? 0} max={todayMax} /></span>
                   </div>
                 ))}
               </section>
@@ -228,20 +232,13 @@ export default function Home() {
                 </div>
                 {data.weeklyLeaderboard.map((u, i) => (
                   <div key={u.username} className={`board-row ${i === 0 ? "row-gold" : i === 1 ? "row-silver" : i === 2 ? "row-bronze" : ""}`}>
-                    <span className="rank">
-                      {i < 3 ? RANK_EMOJIS[i] : `#${i + 1}`}
-                    </span>
+                    <span className="rank">{i < 3 ? RANK_EMOJIS[i] : `#${i + 1}`}</span>
                     <span className="username">
                       <span className="username-short">{shortName(u.username)}</span>
                       <span className="username-full">{u.username}</span>
                     </span>
-                    <span className="count">
-                      {u.total_solves ?? 0}
-                      <span className="count-label"> problems</span>
-                    </span>
-                    <span className="bar-cell">
-                      <Bar value={u.total_solves ?? 0} max={weekMax} />
-                    </span>
+                    <span className="count">{u.total_solves ?? 0}<span className="count-label"> problems</span></span>
+                    <span className="bar-cell"><Bar value={u.total_solves ?? 0} max={weekMax} /></span>
                   </div>
                 ))}
               </section>
@@ -251,7 +248,7 @@ export default function Home() {
             {tab === "history" && (
               <section className="history">
                 {days.length === 0 ? (
-                  <p className="no-data">No history yet this week.</p>
+                  <p className="no-data">No history recorded yet.</p>
                 ) : (
                   <div className="matrix-wrap">
                     <table className="matrix">
@@ -289,7 +286,6 @@ export default function Home() {
               </section>
             )}
 
-            {/* Sync status pills */}
             <div className="sync-row">
               <span className="sync-label">LAST SYNC:</span>
               {data.syncResults.map((r) => (
@@ -330,26 +326,19 @@ export default function Home() {
           overflow-x: hidden;
         }
 
-        .root {
-          position: relative;
-          min-height: 100vh;
-        }
+        .root { position: relative; min-height: 100vh; }
 
         .scanlines {
           pointer-events: none;
           position: fixed;
           inset: 0;
           background: repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 2px,
-            rgba(0,0,0,0.03) 2px,
-            rgba(0,0,0,0.03) 4px
+            0deg, transparent, transparent 2px,
+            rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
           );
           z-index: 100;
         }
 
-        /* HEADER */
         .header {
           display: flex;
           align-items: center;
@@ -361,24 +350,12 @@ export default function Home() {
           top: 0;
           z-index: 50;
         }
-
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
+        .header-left { display: flex; align-items: center; gap: 0.5rem; }
         .logo-bracket { color: var(--accent); font-size: 1.4rem; font-weight: 700; }
         .logo-text { color: var(--accent); font-size: 1.1rem; font-weight: 700; }
         .title { font-family: var(--sans); font-size: 1.1rem; font-weight: 800; letter-spacing: 0.05em; color: var(--text); margin-left: 0.4rem; }
-
         .header-right { display: flex; align-items: center; gap: 1rem; }
-
-        .last-refresh {
-          font-size: 0.65rem;
-          color: var(--dim);
-          letter-spacing: 0.08em;
-        }
+        .last-refresh { font-size: 0.65rem; color: var(--dim); letter-spacing: 0.08em; }
 
         .refresh-btn {
           background: transparent;
@@ -391,20 +368,9 @@ export default function Home() {
           letter-spacing: 0.1em;
           transition: all 0.2s;
         }
+        .refresh-btn:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+        .refresh-btn.loading { opacity: 0.6; cursor: not-allowed; border-color: var(--dim); color: var(--dim); }
 
-        .refresh-btn:hover:not(:disabled) {
-          background: var(--accent);
-          color: var(--bg);
-        }
-
-        .refresh-btn.loading {
-          opacity: 0.6;
-          cursor: not-allowed;
-          border-color: var(--dim);
-          color: var(--dim);
-        }
-
-        /* ERROR */
         .error-bar {
           background: rgba(239,68,68,0.1);
           border-bottom: 1px solid rgba(239,68,68,0.3);
@@ -413,16 +379,8 @@ export default function Home() {
           font-size: 0.8rem;
         }
 
-        /* LOADING */
-        .loading-screen {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 60vh;
-        }
-        .loading-inner {
-          text-align: center;
-        }
+        .loading-screen { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+        .loading-inner { text-align: center; }
         .spinner {
           width: 40px; height: 40px;
           border: 2px solid var(--border);
@@ -435,82 +393,44 @@ export default function Home() {
         .loading-inner p { color: var(--accent); font-size: 0.85rem; }
         .loading-sub { color: var(--dim); font-size: 0.7rem; margin-top: 0.3rem; }
 
-        /* MAIN */
-        .main {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 2rem 1.5rem;
-        }
+        .main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
 
         .date-badge {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-          margin-bottom: 1.5rem;
-          font-size: 0.72rem;
-          flex-wrap: wrap;
+          display: flex; align-items: center; gap: 0.6rem;
+          margin-bottom: 1.5rem; font-size: 0.72rem; flex-wrap: wrap;
         }
         .date-label { color: var(--accent2); letter-spacing: 0.12em; }
         .date-val { color: var(--text); }
         .date-sep { color: var(--border); }
 
-        /* TABS */
-        .tabs {
-          display: flex;
-          gap: 0;
-          border-bottom: 1px solid var(--border);
-          margin-bottom: 2rem;
-        }
+        .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
         .tab {
-          background: transparent;
-          border: none;
+          background: transparent; border: none;
           border-bottom: 2px solid transparent;
-          color: var(--dim);
-          font-family: var(--mono);
-          font-size: 0.7rem;
-          letter-spacing: 0.1em;
-          padding: 0.6rem 1.2rem;
-          cursor: pointer;
-          transition: all 0.15s;
+          color: var(--dim); font-family: var(--mono);
+          font-size: 0.7rem; letter-spacing: 0.1em;
+          padding: 0.6rem 1.2rem; cursor: pointer; transition: all 0.15s;
         }
         .tab:hover { color: var(--text); }
-        .tab-active {
-          color: var(--accent);
-          border-bottom-color: var(--accent);
-        }
+        .tab-active { color: var(--accent); border-bottom-color: var(--accent); }
 
-        /* BOARD */
-        .board {
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-          border: 1px solid var(--border);
-        }
-
+        .board { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); }
         .board-header {
-          display: grid;
-          grid-template-columns: 3rem 1fr 8rem 1fr;
-          gap: 1rem;
-          padding: 0.6rem 1.2rem;
-          background: var(--surface2);
-          font-size: 0.62rem;
-          letter-spacing: 0.12em;
-          color: var(--dim);
+          display: grid; grid-template-columns: 3rem 1fr 8rem 1fr;
+          gap: 1rem; padding: 0.6rem 1.2rem;
+          background: var(--surface2); font-size: 0.62rem;
+          letter-spacing: 0.12em; color: var(--dim);
           border-bottom: 1px solid var(--border);
         }
-
         .board-row {
-          display: grid;
-          grid-template-columns: 3rem 1fr 8rem 1fr;
-          gap: 1rem;
-          align-items: center;
+          display: grid; grid-template-columns: 3rem 1fr 8rem 1fr;
+          gap: 1rem; align-items: center;
           padding: 0.85rem 1.2rem;
           border-bottom: 1px solid var(--border);
           transition: background 0.15s;
         }
         .board-row:last-child { border-bottom: none; }
         .board-row:hover { background: var(--surface2); }
-
         .row-gold { background: rgba(245,158,11,0.04); }
         .row-silver { background: rgba(148,163,184,0.03); }
         .row-bronze { background: rgba(194,132,95,0.03); }
@@ -519,45 +439,22 @@ export default function Home() {
         .username { display: flex; flex-direction: column; }
         .username-short { font-family: var(--sans); font-weight: 600; font-size: 0.95rem; }
         .username-full { font-size: 0.6rem; color: var(--dim); margin-top: 1px; }
-
         .count { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
         .count-label { font-size: 0.6rem; color: var(--dim); }
-
         .bar-cell { display: flex; align-items: center; }
-        .bar-track {
-          width: 100%;
-          height: 6px;
-          background: var(--surface2);
-          border-radius: 3px;
-          overflow: hidden;
-        }
+        .bar-track { width: 100%; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
         .bar-fill {
           height: 100%;
           background: linear-gradient(90deg, var(--accent2), var(--accent));
-          border-radius: 3px;
-          transition: width 0.6s ease;
+          border-radius: 3px; transition: width 0.6s ease;
         }
 
-        /* HISTORY */
-        .history { overflow-x: auto; }
-        .matrix-wrap { min-width: 500px; }
-        .matrix {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 0.72rem;
-        }
-        .matrix th, .matrix td {
-          padding: 0.6rem 0.8rem;
-          text-align: center;
-          border: 1px solid var(--border);
-        }
-        .matrix th {
-          background: var(--surface2);
-          color: var(--dim);
-          letter-spacing: 0.08em;
-          font-size: 0.6rem;
-        }
-        .matrix-name { text-align: left; font-family: var(--sans); font-weight: 600; white-space: nowrap; }
+        .history { overflow-x: auto; width: 100%; }
+        .matrix-wrap { width: max-content; min-width: 100%; }
+        .matrix { border-collapse: collapse; font-size: 0.72rem; width: 100%; }
+        .matrix th, .matrix td { padding: 0.6rem 0.8rem; text-align: center; border: 1px solid var(--border); white-space: nowrap; }
+        .matrix th { background: var(--surface2); color: var(--dim); letter-spacing: 0.08em; font-size: 0.6rem; min-width: 90px; }
+        .matrix-name { text-align: left; font-family: var(--sans); font-weight: 600; white-space: nowrap; min-width: 120px; }
         .matrix-total { font-weight: 700; color: var(--accent); }
         .matrix-cell { color: var(--dim); }
         .cell-0 { background: var(--bg); color: var(--border); }
@@ -569,23 +466,13 @@ export default function Home() {
 
         .no-data { color: var(--dim); font-size: 0.8rem; padding: 2rem; text-align: center; }
 
-        /* SYNC STATUS */
         .sync-row {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 0.4rem;
-          margin-top: 2rem;
-          padding-top: 1rem;
+          display: flex; flex-wrap: wrap; align-items: center;
+          gap: 0.4rem; margin-top: 2rem; padding-top: 1rem;
           border-top: 1px solid var(--border);
         }
         .sync-label { font-size: 0.6rem; color: var(--dim); letter-spacing: 0.1em; }
-        .sync-pill {
-          font-size: 0.6rem;
-          padding: 0.2rem 0.5rem;
-          border-radius: 2px;
-          cursor: default;
-        }
+        .sync-pill { font-size: 0.6rem; padding: 0.2rem 0.5rem; border-radius: 2px; cursor: default; }
         .pill-ok { background: rgba(0,229,160,0.1); color: var(--accent); border: 1px solid rgba(0,229,160,0.2); }
         .pill-err { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
 
@@ -593,11 +480,8 @@ export default function Home() {
           .header { padding: 0.8rem 1rem; }
           .title { font-size: 0.85rem; }
           .main { padding: 1rem; }
-          .board-header, .board-row {
-            grid-template-columns: 2.5rem 1fr 5rem;
-          }
-          .board-header span:last-child,
-          .board-row .bar-cell { display: none; }
+          .board-header, .board-row { grid-template-columns: 2.5rem 1fr 5rem; }
+          .board-header span:last-child, .board-row .bar-cell { display: none; }
           .count { font-size: 0.9rem; }
         }
       `}</style>

@@ -83,3 +83,16 @@ export async function getDailyBreakdown(startDate: string, endDate: string) {
   );
   return res.rows;
 }
+
+// NEW: fetch all rows ever recorded, no date filter
+export async function getAllHistory() {
+  const res = await query(
+    `SELECT username,
+            date::text as date,
+            solve_count
+     FROM daily_solves
+     WHERE solve_count > 0
+     ORDER BY date ASC, username ASC;`
+  );
+  return res.rows;
+}

@@ -1,11 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { setupDb, upsert, getTodayLeaderboard, getWeeklyLeaderboard, getDailyBreakdown } from "../../lib/db";
+import { setupDb, upsert, getTodayLeaderboard, getWeeklyLeaderboard, getDailyBreakdown, getAllHistory } from "../../lib/db";
 import { syncAll, MEMBERS } from "../../lib/leetcode";
 
 function getWeekBounds(today: Date): { start: string; end: string } {
-  // Week starts Monday
   const d = new Date(today);
-  const day = d.getUTCDay(); // 0=Sun, 1=Mon...
+  const day = d.getUTCDay();
   const diffToMonday = day === 0 ? -6 : 1 - day;
   d.setUTCDate(d.getUTCDate() + diffToMonday);
   const start = d.toISOString().split("T")[0];
@@ -23,24 +22,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const todayStr = now.toISOString().split("T")[0];
     const { start: weekStart, end: weekEnd } = getWeekBounds(now);
 
-    // Run sync (fetch from LeetCode and write to DB)
     const syncResults = await syncAll(todayStr);
 
-    // Write synced results to DB
     for (const r of syncResults) {
       if (r.status === "ok") {
         await upsert(r.username, todayStr, r.count);
       }
     }
 
-    // Fetch leaderboard data
-    const [todayBoard, weekBoard, dailyBreakdown] = await Promise.all([
+    const [todayBoard, weekBoard, dailyBreakdown, allHistory] = await Promise.all([
       getTodayLeaderboard(todayStr),
       getWeeklyLeaderboard(weekStart, weekEnd),
       getDailyBreakdown(weekStart, weekEnd),
+      getAllHistory(),
     ]);
 
-    // Ensure all members appear in today's board even if 0
     const todayMap = new Map(todayBoard.map((r: { username: string; solve_count: number }) => [r.username, r.solve_count]));
     const fullTodayBoard = MEMBERS.map((u) => ({
       username: u,
@@ -61,6 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       todayLeaderboard: fullTodayBoard,
       weeklyLeaderboard: fullWeekBoard,
       dailyBreakdown,
+      allHistory,
     });
   } catch (err: unknown) {
     console.error(err);
