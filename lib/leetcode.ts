@@ -1,5 +1,6 @@
 const MEMBERS = [
   "decimusmaximusmeridius",
+  "Chayank__T",
   "tharun_raj_28",
   "N-Varnika",
   "Vasuntra",
