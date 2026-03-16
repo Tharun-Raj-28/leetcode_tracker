@@ -27,7 +27,7 @@ interface ApiData {
   todayLeaderboard: UserScore[];
   weeklyLeaderboard: UserScore[];
   dailyBreakdown: DailyRow[];
-  allHistory: DailyRow[];         // ← NEW: all-time history from DB
+  allHistory: DailyRow[];
   syncResults: SyncResult[];
 }
 
@@ -39,12 +39,8 @@ const USERNAMES_SHORT: Record<string, string> = {
   Vasuntra: "Vasuntra",
   "vijay07-vj": "Vijayavarman",
   decimusmaximusmeridius: "Tamizharasan",
-  "Nethra_Balan_G": "Netra_Balan",
   "Yaminii02": "Yamini",
-<<<<<<< HEAD
-=======
   "Nethra_Balan_G": "Nethra_Balan",
->>>>>>> 892cf62 (History changes)
 };
 
 function shortName(u: string) {
@@ -61,17 +57,10 @@ function Bar({ value, max }: { value: number; max: number }) {
 }
 
 function formatDate(d: string) {
-<<<<<<< HEAD
   return new Date(d + "T00:00:00Z").toLocaleDateString("en-IN", {
-=======
-  const [y, m, day] = d.split("-").map(Number);
-  const date = new Date(y, m - 1, day);
-  return date.toLocaleDateString("en-IN", {
->>>>>>> 892cf62 (History changes)
     weekday: "short",
     month: "short",
     day: "numeric",
-    timeZone: "UTC",
   });
 }
 
@@ -112,7 +101,7 @@ export default function Home() {
   const todayMax = Math.max(1, ...(data?.todayLeaderboard.map((u) => u.solve_count ?? 0) || []));
   const weekMax = Math.max(1, ...(data?.weeklyLeaderboard.map((u) => u.total_solves ?? 0) || []));
 
-  // ── History matrix: built from allHistory (all-time), not dailyBreakdown ──
+  // ── History: all-time from allHistory, not week-scoped dailyBreakdown ──
   const historyRows = data?.allHistory || [];
 
   const days: string[] = [];
@@ -124,7 +113,6 @@ export default function Home() {
     }
   }
 
-  // Members: respect known order, then any unknown usernames after
   const knownOrder = Object.keys(USERNAMES_SHORT);
   const seenMembers = new Set(historyRows.map((r) => r.username));
   const members = [
@@ -136,7 +124,7 @@ export default function Home() {
   for (const row of historyRows) {
     matrixMap[`${row.username}__${row.date}`] = row.solve_count;
   }
-  // ─────────────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -254,7 +242,7 @@ export default function Home() {
                     <table className="matrix">
                       <thead>
                         <tr>
-                          <th>CODER</th>
+                          <th className="matrix-name-header">CODER</th>
                           {days.map((d) => (
                             <th key={d}>{formatDate(d)}</th>
                           ))}
@@ -449,11 +437,24 @@ export default function Home() {
           border-radius: 3px; transition: width 0.6s ease;
         }
 
+        /* HISTORY — scrolls horizontally as date columns grow */
         .history { overflow-x: auto; width: 100%; }
         .matrix-wrap { width: max-content; min-width: 100%; }
         .matrix { border-collapse: collapse; font-size: 0.72rem; width: 100%; }
-        .matrix th, .matrix td { padding: 0.6rem 0.8rem; text-align: center; border: 1px solid var(--border); white-space: nowrap; }
-        .matrix th { background: var(--surface2); color: var(--dim); letter-spacing: 0.08em; font-size: 0.6rem; min-width: 90px; }
+        .matrix th, .matrix td {
+          padding: 0.6rem 0.8rem;
+          text-align: center;
+          border: 1px solid var(--border);
+          white-space: nowrap;
+        }
+        .matrix th {
+          background: var(--surface2);
+          color: var(--dim);
+          letter-spacing: 0.08em;
+          font-size: 0.6rem;
+          min-width: 90px;
+        }
+        .matrix-name-header { min-width: 120px; text-align: left; }
         .matrix-name { text-align: left; font-family: var(--sans); font-weight: 600; white-space: nowrap; min-width: 120px; }
         .matrix-total { font-weight: 700; color: var(--accent); }
         .matrix-cell { color: var(--dim); }
